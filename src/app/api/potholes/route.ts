@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { addPothole, getPotholes } from "@/lib/potholeStore";
-import { potholeBucket, supabaseAdmin } from "@/lib/supabaseServer";
+import { getSupabaseAdmin, potholeBucket } from "@/lib/supabaseServer";
 import type { NewPotholeInput, PotholeSeverity } from "@/lib/potholeTypes";
 
 const STORAGE_FOLDER = "potholes";
@@ -29,6 +29,7 @@ function normalizeOptionalString(value: FormDataEntryValue | null) {
 
 async function persistImage(file: File | null) {
   if (!file || file.size === 0) return undefined;
+  const supabaseAdmin = getSupabaseAdmin();
   if (!potholeBucket) {
     throw new Error("Supabase storage bucket is not configured");
   }

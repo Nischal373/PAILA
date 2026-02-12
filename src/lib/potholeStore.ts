@@ -1,7 +1,7 @@
 import "server-only";
 
 import { randomUUID } from "crypto";
-import { supabaseAdmin } from "@/lib/supabaseServer";
+import { getSupabaseAdmin } from "@/lib/supabaseServer";
 import {
   LeaderboardEntry,
   NewPotholeInput,
@@ -67,6 +67,7 @@ function mapRowToPothole(row: PotholeRow): Pothole {
 }
 
 export async function getPotholes(): Promise<Pothole[]> {
+  const supabaseAdmin = getSupabaseAdmin();
   const { data, error } = await supabaseAdmin
     .from(POTHOLES_TABLE)
     .select("*")
@@ -126,10 +127,11 @@ export async function addPothole(input: NewPotholeInput) {
     includeLocationFields: boolean,
     includeConfidence: boolean
   ) => {
+    const supabaseAdmin = getSupabaseAdmin();
     const payload = buildInsertPayload(includeLocationFields, includeConfidence);
     return supabaseAdmin
       .from(POTHOLES_TABLE)
-      .insert(payload)
+      .insert(payload as never)
       .select()
       .single();
   };
@@ -173,6 +175,7 @@ export async function addPothole(input: NewPotholeInput) {
 }
 
 async function fetchPotholeById(id: string) {
+  const supabaseAdmin = getSupabaseAdmin();
   const { data, error } = await supabaseAdmin
     .from(POTHOLES_TABLE)
     .select("*")
@@ -187,6 +190,7 @@ async function fetchPotholeById(id: string) {
 }
 
 export async function voteOnPothole(id: string, direction: VoteDirection) {
+  const supabaseAdmin = getSupabaseAdmin();
   const existing = await fetchPotholeById(id);
   const updates =
     direction === "up"
@@ -195,7 +199,7 @@ export async function voteOnPothole(id: string, direction: VoteDirection) {
 
   const { data, error } = await supabaseAdmin
     .from(POTHOLES_TABLE)
-    .update(updates)
+    .update(updates as never)
     .eq("id", id)
     .select()
     .single();
@@ -213,6 +217,7 @@ export async function updatePotholeStatus(
   status: PotholeStatus,
   fixedTime?: string
 ) {
+  const supabaseAdmin = getSupabaseAdmin();
   const updates: Pick<PotholeRow, "status" | "fixedtime"> = {
     status,
     fixedtime:
@@ -221,7 +226,7 @@ export async function updatePotholeStatus(
 
   const { data, error } = await supabaseAdmin
     .from(POTHOLES_TABLE)
-    .update(updates)
+    .update(updates as never)
     .eq("id", id)
     .select()
     .single();

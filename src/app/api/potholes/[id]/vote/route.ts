@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabaseServer";
+import { getSupabaseAdmin } from "@/lib/supabaseServer";
 import type { VoteDirection } from "@/lib/potholeTypes";
 
 export async function POST(
@@ -14,6 +14,7 @@ export async function POST(
       return NextResponse.json({ error: "Invalid vote" }, { status: 400 });
     }
     const { id } = await params;
+    const supabaseAdmin = getSupabaseAdmin();
     const store = await cookies();
     let voterId = store.get("paila_voter_id")?.value;
 
@@ -22,9 +23,10 @@ export async function POST(
     }
 
     const value = direction === "up" ? 1 : -1;
+    const voteRecord = { pothole_id: id, voter_id: voterId, value };
     const { error: voteError } = await supabaseAdmin
       .from("pothole_votes")
-      .insert({ pothole_id: id, voter_id: voterId, value });
+      .insert(voteRecord as never);
 
     if (voteError) {
       if (voteError.code === "23505") {
@@ -60,12 +62,17 @@ export async function POST(
       );
     }
 
+    const currentRow = current as unknown as {
+      upvotes: number;
+      downvotes: number;
+    };
+
     const { data: updated, error: updateError } = await supabaseAdmin
       .from("potholes")
       .update({
-        upvotes: current.upvotes + (value === 1 ? 1 : 0),
-        downvotes: current.downvotes + (value === -1 ? 1 : 0),
-      })
+        upvotes: currentRow.upvotes + (value === 1 ? 1 : 0),
+        downvotes: currentRow.downvotes + (value === -1 ? 1 : 0),
+      } as never)
       .eq("id", id)
       .select()
       .single();
