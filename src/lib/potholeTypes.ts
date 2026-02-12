@@ -1,6 +1,13 @@
 export type PotholeSeverity = "low" | "medium" | "high" | "critical";
 export type PotholeStatus = "reported" | "scheduled" | "in_progress" | "fixed";
 export type VoteDirection = "up" | "down";
+export type UserRole = "user" | "superadmin";
+
+export interface SessionUser {
+  username: string;
+  role: UserRole;
+  displayName?: string;
+}
 
 export interface Pothole {
   id: string;
@@ -48,4 +55,18 @@ export interface LeaderboardEntry {
   netVotes: number;
   status: PotholeStatus;
   openDurationHours: number;
+}
+
+export interface PotholeComment {
+  id: string;
+  potholeId: string;
+  author?: string;
+  body: string;
+  createdAt: string;
+}
+
+export interface NewPotholeCommentInput {
+  potholeId: string;
+  author?: string;
+  body: string;
 }

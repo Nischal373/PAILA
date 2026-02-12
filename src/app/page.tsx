@@ -28,6 +28,36 @@ type TrendingReport = {
   reportTime: string;
 };
 
+const statusStyles: Record<string, string> = {
+  reported: "bg-amber-100 text-amber-700 border-amber-200",
+  scheduled: "bg-sky-100 text-sky-700 border-sky-200",
+  in_progress: "bg-indigo-100 text-indigo-700 border-indigo-200",
+  fixed: "bg-emerald-100 text-emerald-700 border-emerald-200",
+};
+
+const statusIcons: Record<string, string> = {
+  reported: "●",
+  scheduled: "◔",
+  in_progress: "⚙",
+  fixed: "✓",
+};
+
+const severityStyles: Record<string, string> = {
+  low: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  medium: "bg-amber-100 text-amber-700 border-amber-200",
+  high: "bg-orange-100 text-orange-700 border-orange-200",
+  critical: "bg-rose-100 text-rose-700 border-rose-200",
+};
+
+const severityIcons: Record<string, string> = {
+  low: "◌",
+  medium: "◍",
+  high: "⬤",
+  critical: "◆",
+};
+
+const formatStatus = (status: string) => status.replace(/_/g, " ");
+
 export default async function Home() {
   let trendingReports: TrendingReport[] = [];
 
@@ -51,6 +81,11 @@ export default async function Home() {
   } catch (error) {
     console.warn("Failed to load trending reports", error);
   }
+
+  const maxNetVotes = trendingReports.reduce(
+    (maxVotes, report) => Math.max(maxVotes, Math.max(report.netVotes, 0)),
+    0
+  );
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-white to-rose-50 px-4 py-12 text-slate-900 md:px-8">
@@ -141,8 +176,9 @@ export default async function Home() {
               {trendingReports.map((report) => (
                 <div
                   key={report.id}
-                  className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                  className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
                 >
+                  <div className="pointer-events-none absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-accent/80 via-sky-400/60 to-rose-300/60" />
                   <div className="flex items-center justify-between">
                     <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
                       {report.location}
@@ -154,12 +190,34 @@ export default async function Home() {
                   <h4 className="mt-3 text-lg font-semibold text-slate-900">
                     {report.title}
                   </h4>
+                  <div className="mt-3">
+                    <div className="mb-1 flex items-center justify-between text-[11px] uppercase tracking-[0.18em] text-slate-500">
+                      <span>Vote intensity</span>
+                      <span>{report.netVotes > 0 ? `+${report.netVotes}` : report.netVotes}</span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-accent to-sky-500"
+                        style={{
+                          width: `${
+                            maxNetVotes > 0
+                              ? Math.min(100, Math.max(8, (Math.max(report.netVotes, 0) / maxNetVotes) * 100))
+                              : 8
+                          }%`,
+                        }}
+                      />
+                    </div>
+                  </div>
                   <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-500">
-                    <span className="rounded-full border border-slate-200 px-2 py-1">
-                      Status: {report.status.replace("_", " ")}
+                    <span
+                      className={`rounded-full border px-2 py-1 font-semibold ${statusStyles[report.status] ?? "border-slate-200 bg-slate-50 text-slate-700"}`}
+                    >
+                      {statusIcons[report.status] ?? "•"} Status: {formatStatus(report.status)}
                     </span>
-                    <span className="rounded-full border border-slate-200 px-2 py-1">
-                      Severity: {report.severity}
+                    <span
+                      className={`rounded-full border px-2 py-1 font-semibold ${severityStyles[report.severity] ?? "border-slate-200 bg-slate-50 text-slate-700"}`}
+                    >
+                      {severityIcons[report.severity] ?? "•"} Severity: {report.severity}
                     </span>
                   </div>
                 </div>

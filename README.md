@@ -49,6 +49,8 @@ create policy "server writes" on public.potholes for insert with check (auth.rol
 create policy "server updates" on public.potholes for update using (auth.role() = 'service_role');
 ```
 
+3. **Run comments migration** — execute [scripts/supabase/pothole_comments.sql](scripts/supabase/pothole_comments.sql) in the Supabase SQL editor.
+
 > If you see `new row violates row-level security policy for table "potholes"`, re-run the policies above or temporarily allow server inserts:
 
 ```sql
@@ -57,7 +59,7 @@ create policy "server writes" on public.potholes for insert
 	with check (auth.role() = 'service_role');
 ```
 
-3. **Configure env vars (`.env.local`)**
+4. **Configure env vars (`.env.local`)**
 
 ```
 SUPABASE_URL="https://<project-ref>.supabase.co"
@@ -67,8 +69,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY="<anon-key>"
 SUPABASE_STORAGE_BUCKET="pothole-images"
 ```
 
-4. **Create a storage bucket** — under *Storage → Buckets* add `pothole-images`, enable "Public" access (or adjust policies if you prefer signed URLs).
-5. **Seed data (optional)** — import `data/potholes.json` or manually add a few rows via the Supabase table editor.
+5. **Create a storage bucket** — under *Storage → Buckets* add `pothole-images`, enable "Public" access (or adjust policies if you prefer signed URLs).
+6. **Seed data (optional)** — import `data/potholes.json` or manually add a few rows via the Supabase table editor.
 
 ### File uploads
 Photo evidence is uploaded directly to Supabase Storage (`<bucket>/potholes/...`). If you change the bucket name, update `SUPABASE_STORAGE_BUCKET`. For private buckets, swap `getPublicUrl` with signed URLs.

@@ -4,7 +4,9 @@ import { randomUUID } from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabaseServer";
 import {
   LeaderboardEntry,
+  NewPotholeCommentInput,
   NewPotholeInput,
+  PotholeComment,
   Pothole,
   PotholeSeverity,
   PotholeStatus,
@@ -12,6 +14,7 @@ import {
 } from "@/lib/potholeTypes";
 
 const POTHOLES_TABLE = "potholes";
+const POTHOLE_COMMENTS_TABLE = "pothole_comments";
 
 interface PotholeRow {
   id: string;
@@ -33,6 +36,16 @@ interface PotholeRow {
   upvotes: number;
   downvotes: number;
   imageurl: string | null;
+}
+
+interface PotholeCommentRow {
+  id?: string;
+  potholeid?: string;
+  pothole_id?: string;
+  author?: string | null;
+  body?: string;
+  createdat?: string;
+  created_at?: string;
 }
 
 function parseSeverity(value: string): PotholeSeverity {
@@ -63,6 +76,18 @@ function mapRowToPothole(row: PotholeRow): Pothole {
     upvotes: row.upvotes,
     downvotes: row.downvotes,
     imageUrl: row.imageurl ?? undefined,
+  };
+}
+
+function mapRowToPotholeComment(row: PotholeCommentRow): PotholeComment {
+  const potholeId = row.potholeid ?? row.pothole_id ?? "";
+  const createdAt = row.createdat ?? row.created_at ?? new Date().toISOString();
+  return {
+    id: row.id ?? `${potholeId}-${createdAt}`,
+    potholeId,
+    author: row.author ?? undefined,
+    body: row.body ?? "",
+    createdAt,
   };
 }
 
@@ -262,4 +287,98 @@ export async function buildLeaderboard(): Promise<LeaderboardEntry[]> {
       ),
     }))
     .sort((a, b) => b.netVotes - a.netVotes);
+}
+
+export async function getPotholeComments(
+  potholeId: string
+): Promise<PotholeComment[]> {
+  const supabaseAdmin = getSupabaseAdmin();
+  let queryResult = await supabaseAdmin
+    .from(POTHOLE_COMMENTS_TABLE)
+    .select("*")
+    .eq("potholeid", potholeId)
+    .order("createdat", { ascending: false });
+
+  if (queryResult.error) {
+    const fallback = await supabaseAdmin
+      .from(POTHOLE_COMMENTS_TABLE)
+      .select("*")
+      .eq("pothole_id", potholeId)
+      .order("created_at", { ascending: false });
+
+    if (!fallback.error) {
+      queryResult = fallback;
+    }
+  }
+
+  const { data, error } = queryResult;
+
+  if (error) {
+    console.error("Failed to fetch pothole comments", error);
+
+    if (error.code === "PGRST205" || error.message.includes("does not exist")) {
+      return [];
+    }
+
+    throw new Error(`Unable to fetch pothole comments: ${error.message}`);
+  }
+
+  return (data ?? []).map((row) =>
+    mapRowToPotholeComment(row as PotholeCommentRow)
+  );
+}
+
+export async function addPotholeComment(
+  input: NewPotholeCommentInput
+): Promise<PotholeComment> {
+  const supabaseAdmin = getSupabaseAdmin();
+  const payload = {
+    id: randomUUID(),
+    potholeid: input.potholeId,
+    author: input.author ?? null,
+    body: input.body,
+    createdat: new Date().toISOString(),
+  };
+
+  let insertResult = await supabaseAdmin
+    .from(POTHOLE_COMMENTS_TABLE)
+    .insert(payload as never)
+    .select("*")
+    .single();
+
+  if (insertResult.error) {
+    const fallbackPayload = {
+      id: randomUUID(),
+      pothole_id: input.potholeId,
+      author: input.author ?? null,
+      body: input.body,
+      created_at: new Date().toISOString(),
+    };
+
+    const fallback = await supabaseAdmin
+      .from(POTHOLE_COMMENTS_TABLE)
+      .insert(fallbackPayload as never)
+      .select("*")
+      .single();
+
+    if (!fallback.error) {
+      insertResult = fallback;
+    }
+  }
+
+  const { data, error } = insertResult;
+
+  if (error) {
+    console.error("Failed to add pothole comment", error);
+
+    if (error.code === "PGRST205" || error.message.includes("does not exist")) {
+      throw new Error(
+        "Comments table is missing. Create table public.pothole_comments first."
+      );
+    }
+
+    throw new Error(`Unable to add pothole comment: ${error.message}`);
+  }
+
+  return mapRowToPotholeComment(data as PotholeCommentRow);
 }

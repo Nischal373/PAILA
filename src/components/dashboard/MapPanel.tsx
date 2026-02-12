@@ -22,6 +22,21 @@ const severityToColor: Record<string, string> = {
   critical: "bg-rose-600",
 };
 
+const formatStatus = (status: Pothole["status"]) => {
+  switch (status) {
+    case "reported":
+      return "Reported";
+    case "scheduled":
+      return "Scheduled";
+    case "in_progress":
+      return "Crew on site";
+    case "fixed":
+      return "Fixed";
+    default:
+      return status;
+  }
+};
+
 interface MapPanelProps {
   potholes: Array<Pothole & { netVotes: number; openHours: number }>;
   selectedId: string | null;
@@ -104,6 +119,7 @@ export default function MapPanel({
             <p className="text-xs text-slate-600">
               {selected.department} • {selected.severity.toUpperCase()}
             </p>
+            <p className="text-xs text-slate-600">Status • {formatStatus(selected.status)}</p>
             <p className="text-xs text-slate-700">
               Open for {Math.round(selected.openHours)} hrs · Net votes {selected.netVotes}
             </p>

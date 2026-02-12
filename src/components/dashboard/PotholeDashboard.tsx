@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { differenceInHours, formatDistanceToNow } from "date-fns";
 import MapPanel from "./MapPanel";
@@ -10,6 +10,7 @@ import DepartmentStats from "./DepartmentStats";
 import type {
   Pothole,
   PotholeStatus,
+  SessionUser,
   VoteDirection,
 } from "@/lib/potholeTypes";
 import {
@@ -65,25 +66,23 @@ export default function PotholeDashboard({ initialPotholes }: DashboardProps) {
     refreshInterval: 15000,
   });
   const potholes = data ?? initialPotholes;
+  const { data: authData } = useSWR<{ user: SessionUser | null }>(
+    "/api/auth/me",
+    async (url: string) => {
+      const response = await fetch(url);
+      if (!response.ok) {
+        return { user: null };
+      }
+      return (await response.json()) as { user: SessionUser | null };
+    }
+  );
+  const currentUser = authData?.user ?? null;
+  const canChangeStatus = currentUser?.role === "superadmin";
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [districtFilter, setDistrictFilter] = useState<string>("");
   const [municipalityFilter, setMunicipalityFilter] = useState<string>("");
   const [wardFilter, setWardFilter] = useState<string>("");
-  const [voteHistory, setVoteHistory] = useState<Record<string, VoteDirection>>(
-    {}
-  );
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = window.localStorage.getItem("paila:vote-history");
-    if (!stored) return;
-    try {
-      const parsed = JSON.parse(stored) as Record<string, VoteDirection>;
-      setVoteHistory(parsed ?? {});
-    } catch (error) {
-      console.warn("Failed to parse vote history", error);
-    }
-  }, []);
+  const [voteHistory, setVoteHistory] = useState<Record<string, VoteDirection>>({});
 
   const enriched = useMemo(() => {
     const now = new Date();
@@ -215,6 +214,7 @@ export default function PotholeDashboard({ initialPotholes }: DashboardProps) {
   };
 
   const handleStatusChange = async (id: string, status: PotholeStatus) => {
+    if (!canChangeStatus) return;
     await fetch(`/api/potholes/${id}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -238,16 +238,16 @@ export default function PotholeDashboard({ initialPotholes }: DashboardProps) {
               and departments know exactly where commuters are hurting.
             </p>
           </div>
-          <div className="flex gap-6 text-right">
-            <div>
-              <p className="text-sm text-slate-500">Active reports</p>
-              <p className="text-4xl font-semibold text-accent">
+          <div className="grid w-full max-w-sm grid-cols-2 gap-3 lg:w-auto">
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-right shadow-sm">
+              <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Active</p>
+              <p className="mt-1 text-3xl font-semibold text-accent">
                 {filtered.filter((p) => p.status !== "fixed").length}
               </p>
             </div>
-            <div>
-              <p className="text-sm text-slate-500">Average queue (hrs)</p>
-              <p className="text-4xl font-semibold text-accent">
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-right shadow-sm">
+              <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Queue hrs</p>
+              <p className="mt-1 text-3xl font-semibold text-accent">
                 {Math.max(
                   1,
                   Math.round(
@@ -360,6 +360,8 @@ export default function PotholeDashboard({ initialPotholes }: DashboardProps) {
               onSelect={() => setSelectedId(p.id)}
               onVote={handleVote}
               onStatusChange={handleStatusChange}
+              currentUser={currentUser}
+              canChangeStatus={canChangeStatus}
               userVote={voteHistory[p.id]}
             />
           ))}

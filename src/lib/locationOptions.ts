@@ -837,10 +837,17 @@ const normalizedWardNumbers = new Map(
 export const municipalityByDistrict =
   municipalityByDistrictData as Record<string, string[]>;
 
-export const districtOptions = Object.keys(municipalityByDistrict).sort();
+export const districtOptions =
+  Object.keys(municipalityByDistrict).length > 0
+    ? Object.keys(municipalityByDistrict).sort()
+    : legacyDistrictOptions;
 
 export const municipalityOptions = Array.from(
-  new Set(Object.values(municipalityByDistrict).flat())
+  new Set(
+    Object.values(municipalityByDistrict).flat().length > 0
+      ? Object.values(municipalityByDistrict).flat()
+      : legacyMunicipalityOptions
+  )
 ).sort();
 
 export const wardNumberOptions = legacyWardNumberOptions;

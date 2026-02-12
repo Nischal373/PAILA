@@ -2,9 +2,11 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import PotholeComments from "./PotholeComments";
 import type {
   Pothole,
   PotholeStatus,
+  SessionUser,
   VoteDirection,
 } from "@/lib/potholeTypes";
 
@@ -34,6 +36,8 @@ interface PotholeCardProps {
   onSelect: () => void;
   onVote: (id: string, direction: VoteDirection) => Promise<void>;
   onStatusChange: (id: string, status: PotholeStatus) => Promise<void>;
+  currentUser: SessionUser | null;
+  canChangeStatus: boolean;
   userVote?: VoteDirection;
 }
 
@@ -43,6 +47,8 @@ export default function PotholeCard({
   onSelect,
   onVote,
   onStatusChange,
+  currentUser,
+  canChangeStatus,
   userVote,
 }: PotholeCardProps) {
   const [upLoading, setUpLoading] = useState(false);
@@ -81,15 +87,17 @@ export default function PotholeCard({
       }`}
     >
       {pothole.imageUrl ? (
-        <Image
-          src={pothole.imageUrl}
-          alt={pothole.title}
-          width={128}
-          height={112}
-          className="h-28 w-32 rounded-2xl object-cover"
-        />
+        <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl">
+          <Image
+            src={pothole.imageUrl}
+            alt={pothole.title}
+            fill
+            sizes="112px"
+            className="object-cover object-center"
+          />
+        </div>
       ) : (
-        <div className="flex h-28 w-32 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 text-sm text-slate-400">
+        <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 text-sm text-slate-400">
           No photo
         </div>
       )}
@@ -156,23 +164,30 @@ export default function PotholeCard({
               ▼
             </button>
           </div>
-          <label className="text-xs uppercase tracking-[0.2em] text-slate-500">
-            Status update
-            <select
-              disabled={statusLoading}
-              value={pothole.status}
-              onClick={(event) => event.stopPropagation()}
-              onChange={(event) => triggerStatusChange(event.target.value as PotholeStatus)}
-              className="ml-3 rounded-2xl border border-slate-300 bg-white px-3 py-1 text-base text-slate-900"
-            >
-              {statuses.map((status) => (
-                <option key={status} value={status} className="bg-white text-slate-900">
-                  {statusCopy[status]}
-                </option>
-              ))}
-            </select>
-          </label>
+          {canChangeStatus ? (
+            <label className="text-xs uppercase tracking-[0.2em] text-slate-500">
+              Status update
+              <select
+                disabled={statusLoading}
+                value={pothole.status}
+                onClick={(event) => event.stopPropagation()}
+                onChange={(event) => triggerStatusChange(event.target.value as PotholeStatus)}
+                className="ml-3 rounded-2xl border border-slate-300 bg-white px-3 py-1 text-base text-slate-900"
+              >
+                {statuses.map((status) => (
+                  <option key={status} value={status} className="bg-white text-slate-900">
+                    {statusCopy[status]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <p className="text-xs text-slate-500">
+              Status: <span className="font-semibold text-slate-700">{statusCopy[pothole.status]}</span> · superadmin only can change
+            </p>
+          )}
         </div>
+        <PotholeComments potholeId={pothole.id} currentUser={currentUser} />
       </div>
     </article>
   );
