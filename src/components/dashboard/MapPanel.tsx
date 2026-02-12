@@ -1,7 +1,7 @@
 "use client";
 
 import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
-import type { MapLayerMouseEvent } from "react-map-gl";
+import type { MapLayerMouseEvent } from "maplibre-gl";
 import { useMemo, useCallback } from "react";
 import clsx from "clsx";
 import type { Pothole } from "@/lib/potholeTypes";

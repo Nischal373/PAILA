@@ -6,6 +6,7 @@ import {
   LeaderboardEntry,
   NewPotholeInput,
   Pothole,
+  PotholeSeverity,
   PotholeStatus,
   VoteDirection,
 } from "@/lib/potholeTypes";
@@ -34,6 +35,13 @@ interface PotholeRow {
   imageurl: string | null;
 }
 
+function parseSeverity(value: string): PotholeSeverity {
+  const allowed: PotholeSeverity[] = ["low", "medium", "high", "critical"];
+  return allowed.includes(value as PotholeSeverity)
+    ? (value as PotholeSeverity)
+    : "medium";
+}
+
 function mapRowToPothole(row: PotholeRow): Pothole {
   return {
     id: row.id,
@@ -42,7 +50,7 @@ function mapRowToPothole(row: PotholeRow): Pothole {
     latitude: row.latitude,
     longitude: row.longitude,
     department: row.department,
-    severity: row.severity,
+    severity: parseSeverity(row.severity),
     potholeConfidence: row.potholeconfidence ?? undefined,
     district: row.district ?? undefined,
     municipality: row.municipality ?? undefined,
