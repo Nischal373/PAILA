@@ -5,7 +5,7 @@ import type { NewPotholeInput, PotholeSeverity } from "@/lib/potholeTypes";
 
 const STORAGE_FOLDER = "potholes";
 const MODEL_URL = process.env.POTHOLE_MODEL_URL;
-const MODEL_TIMEOUT_MS = 8000;
+const MODEL_TIMEOUT_MS = Number(process.env.POTHOLE_MODEL_TIMEOUT_MS ?? "8000");
 
 export async function GET() {
   const potholes = await getPotholes();
